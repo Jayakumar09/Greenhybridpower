@@ -14,7 +14,7 @@ app.locals.prisma = prisma;
 app.use(helmet());
 app.use(compression());
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000', process.env.FRONTEND_URL, 'https://greenhybridpower.in'].filter(Boolean),
+  origin: true,
   credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));
