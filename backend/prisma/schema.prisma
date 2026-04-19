@@ -1,0 +1,281 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Admin {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String
+  name          String
+  role          String    @default("admin")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Customer {
+  id                String    @id @default(cuid())
+  email             String    @unique
+  password          String
+  name              String
+  phone             String?
+  alternatePhone    String?
+  aadharNumber      String?
+  panNumber         String?
+  profileImage      String?
+  isActive          Boolean   @default(true)
+  emailVerified     Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  addresses         Address[]
+  leads             Lead[]
+  bookings          Booking[]
+  quotations        Quotation[]
+  installations     Installation[]
+  payments          Payment[]
+  serviceRequests   ServiceRequest[]
+  documents         Document[]
+  notifications     Notification[]
+}
+
+model Address {
+  id          String    @id @default(cuid())
+  customerId  String
+  customer    Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  addressType String    @default("home")
+  addressLine1 String
+  addressLine2 String?
+  city        String
+  state       String
+  pincode     String
+  landmark   String?
+  isDefault  Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+model Lead {
+  id              String    @id @default(cuid())
+  customerId      String?
+  customer        Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  name            String
+  email           String
+  phone           String
+  alternatePhone  String?
+  address         String?
+  city            String?
+  state           String?
+  pincode         String?
+  systemSize      String?
+  budget          String?
+  roofType        String?
+  avgBill         String?
+  source          String    @default("website")
+  status          String    @default("new")
+  assignedTo      String?
+  notes           String?
+createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  bookings       Booking[]
+  quotations    Quotation[]
+}
+
+model Booking {
+  id              String    @id @default(cuid())
+  customerId      String
+  customer        Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  leadId          String?
+  lead            Lead?     @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  scheduledDate   DateTime
+  scheduledTime   String
+  address         String
+  city            String
+  state           String
+  pincode         String
+  propertyType    String
+  roofType        String?
+  avgMonthlyBill  String?
+  status          String    @default("scheduled")
+  assignedTo      String?
+  technicianNote  String?
+  rescheduledDate DateTime?
+  cancelledReason String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model Plan {
+  id              String    @id @default(cuid())
+  name            String
+  slug            String    @unique
+  description     String
+  systemSize      String
+  panelType       String
+  panelCapacity   String
+  panelCount      Int
+  inverterType    String
+  inverterCapacity String
+  batteryType    String?
+  batteryCapacity String?
+  batteryCount   Int       @default(0)
+  price           Decimal
+  discountPrice  Decimal?
+  emiAvailable   Boolean   @default(true)
+  emiMonths      Int       @default(36)
+  features       String
+  isPopular      Boolean   @default(false)
+  isActive       Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  quotations      Quotation[]
+}
+
+model Quotation {
+  id              String    @id @default(cuid())
+  customerId      String
+  customer        Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  leadId          String?
+  lead            Lead?     @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  planId          String?
+  plan            Plan?     @relation(fields: [planId], references: [id], onDelete: SetNull)
+  systemSize      Decimal
+  panelDetails    String
+  inverterDetails String
+  batteryDetails String?
+  totalPrice     Decimal
+  discount      Decimal?
+  finalPrice    Decimal
+  emiAvailable  Boolean   @default(false)
+  emiPerMonth   Decimal?
+  financingInfo  String?
+  status        String    @default("pending")
+  validUntil    DateTime?
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  installations Installation[]
+}
+
+model Installation {
+  id              String    @id @default(cuid())
+  customerId      String
+  customer        Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  quotationId    String?
+  quotation      Quotation? @relation(fields: [quotationId], references: [id], onDelete: SetNull)
+  systemSize      Decimal
+  startDate      DateTime?
+  estimatedDays Int
+  actualDays    Int?
+  status        String    @default("pending")
+  stage         String    @default("site_preparation")
+  
+  // Installation Stages: site_preparation, mounting_structure, panel_installation, inverter_installation, wiring, testing, commissioning
+  stageHistory   InstallationStage[]
+  documents     Document[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model InstallationStage {
+  id              String    @id @default(cuid())
+  installationId  String
+  installation    Installation @relation(fields: [installationId], references: [id], onDelete: Cascade)
+  stage           String
+  status          String    @default("pending")
+  startedAt       DateTime?
+  completedAt     DateTime?
+  notes           String?
+  imageUrl        String?
+  createdAt       DateTime  @default(now())
+}
+
+model Payment {
+  id              String    @id @default(cuid())
+  customerId      String
+  customer        Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  quotationId    String?
+  amount         Decimal
+  paymentType    String
+  paymentMode    String?
+  status         String    @default("pending")
+  transactionId String?
+  paymentProof   String?
+  razorpayOrderId String?
+  razorpayPaymentId String?
+  paidAt         DateTime?
+  remarks        String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model ServiceRequest {
+  id              String    @id @default(cuid())
+  customerId      String
+  customer        Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  type            String
+  issue           String
+  description    String
+  status          String    @default("open")
+  priority       String    @default("medium")
+  assignedTo     String?
+  resolution     String?
+  resolvedAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model Document {
+  id              String    @id @default(cuid())
+  customerId      String
+  customer        Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  installationId String?
+  installation    Installation? @relation(fields: [installationId], references: [id], onDelete: SetNull)
+  type            String
+  name            String
+  url            String
+  uploadedAt     DateTime  @default(now())
+}
+
+model Notification {
+  id              String    @id @default(cuid())
+  customerId      String
+  customer        Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  title           String
+  message         String
+  type            String
+  isRead          Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+}
+
+model EnergyMonitoring {
+  id              String    @id @default(cuid())
+  customerId      String
+  installationId  String?
+  date            DateTime
+  generatedUnits Decimal
+  consumedUnits  Decimal
+  exportedUnits  Decimal
+  savings         Decimal
+  createdAt       DateTime  @default(now())
+}
+
+model ActivityLog {
+  id              String    @id @default(cuid())
+  userId          String?
+  userType        String?
+  action         String
+  entityType     String?
+  entityId       String?
+  details        String?
+  ipAddress      String?
+  userAgent      String?
+  createdAt      DateTime  @default(now())
+}
